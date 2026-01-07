@@ -3,80 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Spring Study - Chat</title>
+  <title>Spring Study - Chat Room</title>
   <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}">
-  <style>
-    body {
-      background-color: #f4f7f6;
-    }
-
-    .chat-container {
-      max-width: 800px;
-      margin: 30px auto;
-    }
-
-    .card {
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .chat-header {
-      border-radius: 15px 15px 0 0 !important;
-      background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%) !important;
-      color: white;
-    }
-
-    #chat-box {
-      height: 500px;
-      overflow-y: auto;
-      background-color: #ffffff;
-      padding: 20px;
-    }
-
-    .message-item {
-      margin-bottom: 15px;
-    }
-
-    .message-bubble {
-      padding: 10px 15px;
-      border-radius: 20px;
-      max-width: 70%;
-      position: relative;
-      word-wrap: break-word;
-    }
-
-    .sender-name {
-      font-size: 0.8rem;
-      margin-bottom: 5px;
-      color: #888;
-      padding: 0 10px;
-    }
-
-    .my-message {
-      justify-content: flex-end;
-    }
-
-    .my-message .message-bubble {
-      background-color: #007bff;
-      color: white;
-      border-bottom-right-radius: 5px;
-    }
-
-    .my-message .sender-name {
-      text-align: right;
-    }
-
-    .other-message {
-      justify-content: flex-start;
-    }
-
-    .other-message .message-bubble {
-      background-color: #e9ecef;
-      color: black;
-      border-bottom-left-radius: 5px;
-    }
-  </style>
+  <link rel="stylesheet" th:href="@{/static/style.css}">
 </head>
 
 <body>
@@ -90,7 +19,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" th:href="@{/}">홈</a></li>
-          <li class="nav-item"><a class="nav-link active" th:href="@{/chat}">채팅</a></li>
+          <li class="nav-item"><a class="nav-link active" th:href="@{/chat/enterence}">채팅</a></li>
         </ul>
       </div>
     </div>
@@ -100,7 +29,7 @@
     <div class="card">
       <div class="card-header chat-header fw-bold">
         💬 실시간 채팅방
-        <span id="current-user-display" class="badge bg-light text-dark ms-2" style="display: none;"></span>
+        <span id="current-user-display" class="badge bg-light text-dark ms-2" th:text="${username}"></span>
       </div>
 
       <div class="card-body" id="chat-box">
@@ -116,70 +45,25 @@
     </div>
   </div>
 
-  <div class="modal fade" id="nameInputModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-    aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="staticBackdropLabel">환영합니다! 👋</h5>
-        </div>
-        <div class="modal-body">
-          <p>채팅방에서 사용할 이름을 입력해주세요.</p>
-          <input type="text" id="username-input" class="form-control" placeholder="이름 입력 (예: 라이언)"
-            onkeypress="if(event.keyCode=='13'){saveName();}">
-          <div id="name-error" class="text-danger mt-2" style="display: none;">이름을 입력해야 합니다.</div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary w-100" onclick="saveName()">입력 완료 & 입장하기</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 
-  <script>
-    let currentUsername = null;
-    let modalInstance = null;
+  <script th:inline="javascript">
+    /* <![CDATA[ */
+    let currentUsername = /*[[ ${username} ]]*/'';
 
     const chatBox = document.getElementById('chat-box');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
 
     document.addEventListener('DOMContentLoaded', function () {
-      // 페이지 로드 시 모달 띄우기
-      const modalElement = document.getElementById('nameInputModal');
-      modalInstance = new bootstrap.Modal(modalElement);
-      modalInstance.show();
-
       // 메시지 전송 이벤트 연결 (버튼 클릭 및 엔터키)
       sendButton.addEventListener('click', sendMessage);
       messageInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') sendMessage();
       });
-    });
 
-    function saveName() {
-      const nameInput = document.getElementById('username-input');
-      const nameError = document.getElementById('name-error');
-      const name = nameInput.value.trim();
-
-      if (name === '') {
-        nameError.style.display = 'block';
-        return;
-      }
-
-      currentUsername = name;
-      console.log(`사용자 이름 설정됨: ${currentUsername}`);
-
-      const userDisplay = document.getElementById('current-user-display');
-      userDisplay.innerText = `내 이름: ${currentUsername}`;
-      userDisplay.style.display = 'inline-block';
-
-      modalInstance.hide();
       initDummyData();
-    }
-
+    });
 
     function renderMessage(sender, message, isMine) {
       // 내 메시지면 오른쪽 정렬(d-flex justify-content-end), 아니면 왼쪽 정렬
@@ -229,6 +113,7 @@
       }, 2500);
     }
 
+    /*]]>*/
   </script>
 </body>
 
