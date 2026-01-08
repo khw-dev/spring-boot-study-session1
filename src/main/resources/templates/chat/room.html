@@ -6,16 +6,14 @@
   <title>Spring Study - Chat Room</title>
   <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}">
   <link rel="stylesheet" th:href="@{/static/style.css}">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 
 <body>
-
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
       <a class="navbar-brand" th:href="@{/}">Spring Study</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" th:href="@{/}">홈</a></li>
@@ -30,15 +28,14 @@
       <div class="card-header chat-header fw-bold">
         💬 실시간 채팅방
         <span id="current-user-display" class="badge bg-light text-dark ms-2" th:text="${username}"></span>
+        <span id="status-badge" class="badge bg-secondary ms-2">연결 중...</span>
       </div>
 
-      <div class="card-body" id="chat-box">
-      </div>
+      <div class="card-body" id="chat-box"></div>
 
       <div class="card-footer bg-white p-3">
         <div class="input-group">
-          <input type="text" id="message-input" class="form-control border-0 bg-light" placeholder="메시지를 입력하세요..."
-            aria-label="Message">
+          <input type="text" id="message-input" class="form-control border-0 bg-light" placeholder="메시지를 입력하세요...">
           <button class="btn btn-primary" type="button" id="send-button">전송 🚀</button>
         </div>
       </div>
@@ -49,28 +46,72 @@
 
   <script th:inline="javascript">
     /* <![CDATA[ */
+    const roomId = 'room1';
+    const uuid = crypto.randomUUID();
     let currentUsername = /*[[ ${username} ]]*/'';
+    let stompClient = null;
 
     const chatBox = document.getElementById('chat-box');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
+    const statusBadge = document.getElementById('status-badge');
 
     document.addEventListener('DOMContentLoaded', function () {
+      connect();
       sendButton.addEventListener('click', sendMessage);
       messageInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') sendMessage();
       });
     });
 
-    function renderMessage(username, message, isMine) {
+    function connect() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const endpoint = /*[[ @{/ws-stomp} ]]*/'';
+      const wsUrl = `${protocol}//${host}${endpoint}`;
+
+      const socket = new WebSocket(wsUrl);
+
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, function (frame) {
+        console.log('Connected: ' + frame);
+        statusBadge.className = 'badge bg-success ms-2';
+        statusBadge.innerText = 'Online';
+
+        stompClient.subscribe(`/sub/chat/${roomId}`, function (messageOutput) {
+          showMessage(JSON.parse(messageOutput.body));
+        });
+
+      }, function (error) {
+        console.error('Connection lost', error);
+        statusBadge.className = 'badge bg-danger ms-2';
+        statusBadge.innerText = 'Offline';
+      });
+    }
+
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (message === '' || stompClient === null) return;
+
+      stompClient.send(`/pub/chat/${roomId}`, {}, JSON.stringify({
+        id: uuid,
+        username: currentUsername,
+        message: message
+      }));
+      messageInput.value = '';
+    }
+
+    function showMessage(messageData) {
+      const isMine = messageData.id === uuid;
       const alignmentClass = isMine ? 'my-message d-flex justify-content-end' : 'other-message d-flex justify-content-start';
 
       const messageHTML = `
             <div class="message-item w-100 ${alignmentClass}">
                 <div style="max-width: 75%;">
-                    <div class="user-name">${username}</div>
+                    <div class="user-name mb-1 ${isMine ? 'text-end' : 'text-start'}">${messageData.username}</div>
                     <div class="message-bubble shadow-sm">
-                        ${message}
+                        ${messageData.message}
                     </div>
                 </div>
             </div>
@@ -79,41 +120,6 @@
       chatBox.insertAdjacentHTML('beforeend', messageHTML);
       scrollToBottom();
     }
-
-    async function sendMessage() {
-      const message = messageInput.value.trim();
-      if (message === '' || currentUsername === null) return;
-
-      renderMessage(currentUsername, message, true);
-      messageInput.value = '';
-
-      try {
-        const response = await fetch(/*[[ @{/api/chat/message} ]]*/'', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: currentUsername,
-            message: message
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-
-          renderMessage(data.username, data.message, false);
-        } else {
-          console.error("서버 응답 오류:", response.status);
-          renderMessage("시스템", "메시지 전송에 실패했습니다.", false);
-        }
-
-      } catch (error) {
-        console.error("통신 오류:", error);
-        renderMessage("시스템", "서버와 연결할 수 없습니다.", false);
-      }
-    }
-
 
     function scrollToBottom() {
       chatBox.scrollTop = chatBox.scrollHeight;
