@@ -56,23 +56,19 @@
     const sendButton = document.getElementById('send-button');
 
     document.addEventListener('DOMContentLoaded', function () {
-      // 메시지 전송 이벤트 연결 (버튼 클릭 및 엔터키)
       sendButton.addEventListener('click', sendMessage);
       messageInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') sendMessage();
       });
-
-      initDummyData();
     });
 
-    function renderMessage(sender, message, isMine) {
-      // 내 메시지면 오른쪽 정렬(d-flex justify-content-end), 아니면 왼쪽 정렬
+    function renderMessage(username, message, isMine) {
       const alignmentClass = isMine ? 'my-message d-flex justify-content-end' : 'other-message d-flex justify-content-start';
 
       const messageHTML = `
             <div class="message-item w-100 ${alignmentClass}">
                 <div style="max-width: 75%;">
-                    <div class="sender-name">${sender}</div>
+                    <div class="user-name">${username}</div>
                     <div class="message-bubble shadow-sm">
                         ${message}
                     </div>
@@ -84,35 +80,44 @@
       scrollToBottom();
     }
 
-
-    function sendMessage() {
+    async function sendMessage() {
       const message = messageInput.value.trim();
       if (message === '' || currentUsername === null) return;
 
-      // 내가 쓴 메시지는 오른쪽에 표시 (isMine = true)
-      // 추후 이 부분에서 웹소켓으로 메시지를 전송하게 됩니다.
       renderMessage(currentUsername, message, true);
-
       messageInput.value = '';
+
+      try {
+        const response = await fetch('/api/chat/message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: currentUsername,
+            message: message
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          renderMessage(data.username, data.message, false);
+        } else {
+          console.error("서버 응답 오류:", response.status);
+          renderMessage("시스템", "메시지 전송에 실패했습니다.", false);
+        }
+
+      } catch (error) {
+        console.error("통신 오류:", error);
+        renderMessage("시스템", "서버와 연결할 수 없습니다.", false);
+      }
     }
 
 
     function scrollToBottom() {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
-
-
-    // 더미 데이터 로드 (테스트용)
-    function initDummyData() {
-      setTimeout(() => {
-        renderMessage('철수', `안녕하세요! ${currentUsername}님 반가워요.`, false);
-      }, 1500);
-
-      setTimeout(() => {
-        renderMessage('영희', '오~ 인터페이스 깔끔하네요 ㅎㅎ', false);
-      }, 2500);
-    }
-
     /*]]>*/
   </script>
 </body>
