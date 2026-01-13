@@ -51,6 +51,7 @@
     const roomId = 'room1';
     const uuid = crypto.randomUUID();
     let currentUsername = /*[[ ${username} ]]*/'';
+    let messageIdCounter = 0;
     let stompClient = null;
 
     const chatBox = document.getElementById('chat-box');
@@ -99,28 +100,103 @@
       stompClient.send(`/pub/chat/${roomId}`, {}, JSON.stringify({
         id: uuid,
         username: currentUsername,
-        message: message
+        message: message,
+        messageId: messageIdCounter++,
+        timestamp: Date.now()
       }));
       messageInput.value = '';
     }
 
     function showMessage(messageData) {
       const isMine = messageData.id === uuid;
-      const alignmentClass = isMine ? 'my-message d-flex justify-content-end' : 'other-message d-flex justify-content-start';
+      const alignmentClass = isMine ? 'my-message' : 'other-message';
+      const msgId = `msg-${messageData.id}-${messageData.messageId || Date.now()}`;
+
+      const editButtons = isMine ? `
+        <div class="message-actions">
+          <button class="btn-edit" onclick="editMessage('${msgId}')" title="수정">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-delete" onclick="deleteMessage('${msgId}')" title="삭제">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <line x1="10" y1="11" x2="10" y2="17"/>
+              <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+          </button>
+        </div>
+      ` : '';
 
       const messageHTML = `
-            <div class="message-item ${alignmentClass}">
-                <div class="message-content">
-                    <div class="user-name ${isMine ? 'text-end' : ''}">${messageData.username}</div>
-                    <div class="message-bubble">
-                        ${messageData.message}
-                    </div>
-                </div>
+        <div class="message-item ${alignmentClass}" id="${msgId}">
+          <div class="message-content">
+            <div class="user-name ${isMine ? 'text-end' : ''}">${messageData.username}</div>
+            <div class="message-wrapper">
+              <div class="message-bubble-wrapper">
+                <div class="message-bubble" contenteditable="false">${escapeHtml(messageData.message)}</div>
+              </div>
+              ${editButtons}
             </div>
-        `;
+          </div>
+        </div>
+      `;
 
       chatBox.insertAdjacentHTML('beforeend', messageHTML);
       scrollToBottom();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function editMessage(msgId) {
+      const msgElement = document.getElementById(msgId);
+      const bubble = msgElement.querySelector('.message-bubble');
+      const originalText = bubble.textContent;
+
+      bubble.contentEditable = true;
+      bubble.focus();
+      bubble.classList.add('editing');
+
+      // Enter로 저장, Esc로 취소
+      const saveEdit = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          bubble.contentEditable = false;
+          bubble.classList.remove('editing');
+          bubble.removeEventListener('keydown', saveEdit);
+        } else if (e.key === 'Escape') {
+          bubble.textContent = originalText;
+          bubble.contentEditable = false;
+          bubble.classList.remove('editing');
+          bubble.removeEventListener('keydown', saveEdit);
+        }
+      };
+
+      bubble.addEventListener('keydown', saveEdit);
+      bubble.addEventListener('blur', () => {
+        setTimeout(() => {
+          bubble.contentEditable = false;
+          bubble.classList.remove('editing');
+        }, 200);
+      });
+    }
+
+    function deleteMessage(msgId) {
+      if (confirm('메시지를 삭제하시겠습니까?')) {
+        const msgElement = document.getElementById(msgId);
+        if (msgElement) {
+          msgElement.style.opacity = '0';
+          msgElement.style.transform = 'scale(0.8)';
+          setTimeout(() => msgElement.remove(), 300);
+        }
+      }
     }
 
     function scrollToBottom() {

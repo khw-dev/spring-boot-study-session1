@@ -40,6 +40,7 @@ body {
 .message-item {
   display: flex;
   margin-bottom: 16px;
+  transition: opacity 0.3s, transform 0.3s;
 }
 
 .message-item.my-message {
@@ -52,6 +53,7 @@ body {
 
 .message-content {
   max-width: 65%;
+  position: relative;
 }
 
 .user-name {
@@ -66,6 +68,70 @@ body {
   border-radius: 12px;
   word-wrap: break-word;
   line-height: 1.4;
+  outline: none;
+  transition: transform 0.2s ease, background-color 0.2s;
+}
+
+.message-bubble.editing {
+  border: 2px solid #0d6efd;
+  background-color: #fff;
+  color: #212529;
+}
+
+.message-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.message-bubble-wrapper {
+  transition: transform 0.2s ease;
+}
+
+.message-item:hover .message-bubble-wrapper {
+  transform: translateX(-8px);
+}
+
+.message-actions {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.message-item:hover .message-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.btn-edit,
+.btn-delete {
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.btn-edit:hover,
+.btn-delete:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #212529;
+  transform: scale(1.1);
+}
+
+.btn-edit svg,
+.btn-delete svg {
+  display: block;
 }
 
 .my-message .message-bubble {
