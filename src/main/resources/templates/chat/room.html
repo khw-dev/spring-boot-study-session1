@@ -25,18 +25,20 @@
 
   <div class="container chat-container">
     <div class="card">
-      <div class="card-header chat-header fw-bold">
-        💬 실시간 채팅방
-        <span id="current-user-display" class="badge bg-light text-dark ms-2" th:text="${username}"></span>
-        <span id="status-badge" class="badge bg-secondary ms-2">연결 중...</span>
+      <div class="card-header chat-header d-flex justify-content-between align-items-center">
+        <div>
+          <strong>채팅방</strong>
+          <span id="current-user-display" class="ms-2 text-white-50" th:text="${username}"></span>
+        </div>
+        <span id="status-badge" class="badge bg-light text-dark">연결 중</span>
       </div>
 
       <div class="card-body" id="chat-box"></div>
 
       <div class="card-footer bg-white p-3">
         <div class="input-group">
-          <input type="text" id="message-input" class="form-control border-0 bg-light" placeholder="메시지를 입력하세요...">
-          <button class="btn btn-primary" type="button" id="send-button">전송 🚀</button>
+          <input type="text" id="message-input" class="form-control" placeholder="메시지를 입력하세요">
+          <button class="btn btn-primary" type="button" id="send-button">전송</button>
         </div>
       </div>
     </div>
@@ -76,8 +78,8 @@
 
       stompClient.connect({}, function (frame) {
         console.log('Connected: ' + frame);
-        statusBadge.className = 'badge bg-success ms-2';
-        statusBadge.innerText = 'Online';
+        statusBadge.className = 'badge bg-success';
+        statusBadge.innerText = '연결됨';
 
         stompClient.subscribe(`/sub/chat/${roomId}`, function (messageOutput) {
           showMessage(JSON.parse(messageOutput.body));
@@ -85,8 +87,8 @@
 
       }, function (error) {
         console.error('Connection lost', error);
-        statusBadge.className = 'badge bg-danger ms-2';
-        statusBadge.innerText = 'Offline';
+        statusBadge.className = 'badge bg-danger';
+        statusBadge.innerText = '연결 끊김';
       });
     }
 
@@ -107,10 +109,10 @@
       const alignmentClass = isMine ? 'my-message d-flex justify-content-end' : 'other-message d-flex justify-content-start';
 
       const messageHTML = `
-            <div class="message-item w-100 ${alignmentClass}">
-                <div style="max-width: 75%;">
-                    <div class="user-name mb-1 ${isMine ? 'text-end' : 'text-start'}">${messageData.username}</div>
-                    <div class="message-bubble shadow-sm">
+            <div class="message-item ${alignmentClass}">
+                <div class="message-content">
+                    <div class="user-name ${isMine ? 'text-end' : ''}">${messageData.username}</div>
+                    <div class="message-bubble">
                         ${messageData.message}
                     </div>
                 </div>
